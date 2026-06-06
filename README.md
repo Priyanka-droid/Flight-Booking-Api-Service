@@ -40,6 +40,7 @@ mvn test
 ```bash
 curl -i -X POST http://localhost:8080/bookings \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: order-123" \
   -d '{"flightId": "AA100", "seats": 2, "passenger": "Jane Doe"}'
 ```
 
@@ -98,8 +99,7 @@ mechanisms — is in [DECISIONS.md](DECISIONS.md).
 - **Persistence.** Everything lives in memory, so all bookings are lost on restart. A real
   deployment would back this with a database.
 - **Multi-instance correctness.** The no-overbooking guarantee relies on a single process's
-  in-memory lock. Across multiple servers it would have to move to database-level locking (or
+  in-memory concurrent hashmap. Across multiple servers it would have to move to database-level locking (or
   another shared coordinator) to stay safe.
 - **Seat selection.** Booking only takes a seat *count*; choosing specific seats would be a
   separate feature.
-- **Cancellation.** There's no way to cancel a booking and return its seats to the flight.
