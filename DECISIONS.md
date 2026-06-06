@@ -29,3 +29,9 @@
   via a single `@RestControllerAdvice`. Codes: `INVALID_REQUEST`, `FLIGHT_NOT_FOUND`,
   `INSUFFICIENT_SEATS`. `FlightNotFoundException` / `InsufficientSeatsException` are thrown
   from the atomic reserve and mapped centrally, so no failure returns bare/inconsistent text.
+- **Concurrency** — the check-and-decrement runs inside `ConcurrentHashMap.compute`, which
+  holds the per-key bin lock for the duration of the remapping. So same-flight bookings
+  serialize (no oversell past capacity) while different flights, sitting under different
+  keys, proceed without waiting on each other. No global lock, no `synchronized`. Proven by
+  `BookingConcurrencyTest`: 100 threads race for 5 seats → exactly 5 booked, 95 rejected,
+  0 remaining; and many flights booked concurrently each reach a correct count.
