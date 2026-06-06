@@ -45,3 +45,6 @@
   error with `422 Unprocessable Entity`, code `IDEMPOTENCY_KEY_CONFLICT` — a distinct status
   from the `409` used for insufficient seats, keeping one status per cause. Proven by
   `BookingIdempotencyTest`, including 50 simultaneous retries collapsing to a single booking.
+
+- **Count based booking design choice**
+Count-based booking, not a seat map — a flight tracks a single remainingSeats count and a booking takes N seats from it, rather than modelling individual seats (1A, 1B, …) and assigning specific ones. The task is "book N seats if enough remain," which a count answers directly; a seat map adds per-seat state, allocation rules, and a selection/availability API the requirements don't call for. The count also keeps the core invariant trivial to enforce atomically — the whole check-and-decrement is one ConcurrentHashMap.compute over a single integer, whereas reserving specific seats would mean coordinating updates across many seat entries to stay correct under concurrency. Seat selection is noted in the README as a separate feature worth adding later; modelling it now would be over-engineering for the stated scope.
