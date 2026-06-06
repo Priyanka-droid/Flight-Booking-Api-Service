@@ -66,6 +66,51 @@ curl -i -X POST http://localhost:8080/bookings \
   -H "Idempotency-Key: order-123" \
   -d '{"flightId": "AA100", "seats": 2, "passenger": "Jane Doe"}'
 ```
+### Retry with same idempotency key but different body
+
+Send the same `Idempotency-Key` but with different requets body, should fail
+```bash
+curl --location 'http://localhost:8080/bookings' \
+--header 'Content-Type: application/json' \
+--header 'Idempotency-Key: order-124' \
+--data '{"flightId": "AA100", "seats": 3, "passenger": "Jane Doe"}'
+```
+
+```json
+{
+    "code": "IDEMPOTENCY_KEY_CONFLICT",
+    "message": "Idempotency-Key order-124 was reused with a different request"
+}
+```
+
+### Send request for a flight that does not exist
+
+Should fail
+
+```bash
+curl --location 'http://localhost:8080/bookings' \
+--header 'Content-Type: application/json' \
+--header 'Idempotency-Key: order-125' \
+--data '{"flightId": "1", "seats": 3, "passenger": "Jane Doe"}'
+```
+
+```json
+{
+    "code": "FLIGHT_NOT_FOUND",
+    "message": "Unknown flight: 1"
+}
+```
+
+### Request more than allowed seats
+
+Should fail
+```bash
+curl --location 'http://localhost:8080/bookings' \
+--header 'Content-Type: application/json' \
+--header 'Idempotency-Key: order-125' \
+--data '{"flightId": "DL400", "seats": 51, "passenger": "Jane Doe"}'
+```
+
 
 ### Errors
 
