@@ -10,15 +10,35 @@ import org.springframework.stereotype.Service;
 public class BookingService {
 
     private final FlightRepository flightRepository;
+    private final IdempotencyStore idempotencyStore;
 
-    public BookingService(FlightRepository flightRepository) {
+    public BookingService(FlightRepository flightRepository, IdempotencyStore idempotencyStore) {
         this.flightRepository = flightRepository;
+        this.idempotencyStore = idempotencyStore;
     }
 
-    // Reserves the seats atomically, then returns a booking plus the seats left.
     public BookingResult book(String flightId, int seats, String passenger) {
+        return book(flightId, seats, passenger, null);
+    }
+
+    // With a token, the booking work runs once per token; a retry replays the original
+    // booking. Without a token, every call is an independent booking.
+    public BookingResult book(String flightId, int seats, String passenger, String idempotencyToken) {
+        if (idempotencyToken == null || idempotencyToken.isBlank()) {
+            return reserveAndBuild(flightId, seats, passenger);
+        }
+        String fingerprint = fingerprint(flightId, seats, passenger);
+        return idempotencyStore.execute(idempotencyToken, fingerprint,
+                () -> reserveAndBuild(flightId, seats, passenger));
+    }
+
+    private BookingResult reserveAndBuild(String flightId, int seats, String passenger) {
         Flight updated = flightRepository.reserveSeats(flightId, seats);
         Booking booking = new Booking(UUID.randomUUID().toString(), flightId, seats, passenger);
         return new BookingResult(booking, updated.remainingSeats());
+    }
+
+    private String fingerprint(String flightId, int seats, String passenger) {
+        return flightId + "|" + seats + "|" + passenger;
     }
 }

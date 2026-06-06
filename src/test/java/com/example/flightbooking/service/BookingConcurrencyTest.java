@@ -20,7 +20,7 @@ class BookingConcurrencyTest {
         FlightRepository repository = new FlightRepository();
         int capacity = 5;
         repository.save(new Flight("XX1", capacity, capacity));
-        BookingService bookingService = new BookingService(repository);
+        BookingService bookingService = new BookingService(repository, new IdempotencyStore());
 
         int attempts = 100;
         ExecutorService pool = Executors.newFixedThreadPool(32);
@@ -66,7 +66,7 @@ class BookingConcurrencyTest {
         for (int f = 0; f < flightCount; f++) {
             repository.save(new Flight("F" + f, capacity, capacity));
         }
-        BookingService bookingService = new BookingService(repository);
+        BookingService bookingService = new BookingService(repository, new IdempotencyStore());
 
         ExecutorService pool = Executors.newFixedThreadPool(32);
         CountDownLatch startGun = new CountDownLatch(1);

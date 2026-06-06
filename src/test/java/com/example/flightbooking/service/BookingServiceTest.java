@@ -16,7 +16,7 @@ class BookingServiceTest {
     void setUp() throws Exception {
         repository = new FlightRepository();
         new FlightDataLoader(repository).run();
-        bookingService = new BookingService(repository);
+        bookingService = new BookingService(repository, new IdempotencyStore());
     }
 
     @Test

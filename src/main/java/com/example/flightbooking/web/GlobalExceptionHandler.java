@@ -1,6 +1,7 @@
 package com.example.flightbooking.web;
 
 import com.example.flightbooking.exception.FlightNotFoundException;
+import com.example.flightbooking.exception.IdempotencyConflictException;
 import com.example.flightbooking.exception.InsufficientSeatsException;
 import com.example.flightbooking.web.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInsufficientSeats(InsufficientSeatsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("INSUFFICIENT_SEATS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyConflict(IdempotencyConflictException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ErrorResponse("IDEMPOTENCY_KEY_CONFLICT", ex.getMessage()));
     }
 
     // Bean Validation failures on the request body.

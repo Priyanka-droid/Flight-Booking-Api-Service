@@ -35,3 +35,13 @@
   keys, proceed without waiting on each other. No global lock, no `synchronized`. Proven by
   `BookingConcurrencyTest`: 100 threads race for 5 seats → exactly 5 booked, 95 rejected,
   0 remaining; and many flights booked concurrently each reach a correct count.
+- **Idempotency** — clients pass an optional `Idempotency-Key` header. The token is claimed
+  with `ConcurrentHashMap.computeIfAbsent`: the booking work runs inside the mapping function,
+  so it executes exactly once per token and concurrent retries block then replay the stored
+  result instead of booking again. The stored `BookingResult` is returned verbatim on replay,
+  so a retry sees the original booking id and seat count. No token → every call is independent.
+- **Token reuse with a different body** — each token stores a fingerprint of its payload
+  (`flightId|seats|passenger`). A replay whose fingerprint differs is rejected as a client
+  error with `422 Unprocessable Entity`, code `IDEMPOTENCY_KEY_CONFLICT` — a distinct status
+  from the `409` used for insufficient seats, keeping one status per cause. Proven by
+  `BookingIdempotencyTest`, including 50 simultaneous retries collapsing to a single booking.

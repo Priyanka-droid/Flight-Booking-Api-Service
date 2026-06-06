@@ -2,12 +2,14 @@ package com.example.flightbooking.web;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.flightbooking.exception.FlightNotFoundException;
+import com.example.flightbooking.exception.IdempotencyConflictException;
 import com.example.flightbooking.exception.InsufficientSeatsException;
 import com.example.flightbooking.model.Booking;
 import com.example.flightbooking.service.BookingResult;
@@ -31,7 +33,7 @@ class BookingControllerTest {
     @Test
     void validBookingReturns201WithCompleteBody() throws Exception {
         Booking booking = new Booking("bk-1", "AI101", 3, "Jane Doe");
-        when(bookingService.book(anyString(), anyInt(), anyString()))
+        when(bookingService.book(anyString(), anyInt(), anyString(), nullable(String.class)))
                 .thenReturn(new BookingResult(booking, 177));
 
         mockMvc.perform(post("/bookings")
@@ -46,7 +48,7 @@ class BookingControllerTest {
 
     @Test
     void unknownFlightReturns404WithErrorBody() throws Exception {
-        when(bookingService.book(anyString(), anyInt(), anyString()))
+        when(bookingService.book(anyString(), anyInt(), anyString(), nullable(String.class)))
                 .thenThrow(new FlightNotFoundException("ZZ999"));
 
         mockMvc.perform(post("/bookings")
@@ -59,7 +61,7 @@ class BookingControllerTest {
 
     @Test
     void notEnoughSeatsReturns409WithErrorBody() throws Exception {
-        when(bookingService.book(anyString(), anyInt(), anyString()))
+        when(bookingService.book(anyString(), anyInt(), anyString(), nullable(String.class)))
                 .thenThrow(new InsufficientSeatsException("AI101", 200, 180));
 
         mockMvc.perform(post("/bookings")
@@ -67,6 +69,20 @@ class BookingControllerTest {
                         .content("{\"flightId\":\"AI101\",\"seats\":200,\"passenger\":\"Jane Doe\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INSUFFICIENT_SEATS"))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
+    void tokenReusedWithDifferentRequestReturns422WithErrorBody() throws Exception {
+        when(bookingService.book(anyString(), anyInt(), anyString(), nullable(String.class)))
+                .thenThrow(new IdempotencyConflictException("tok-1"));
+
+        mockMvc.perform(post("/bookings")
+                        .header("Idempotency-Key", "tok-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"flightId\":\"AI101\",\"seats\":3,\"passenger\":\"Jane Doe\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_CONFLICT"))
                 .andExpect(jsonPath("$.message").isNotEmpty());
     }
 

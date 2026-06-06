@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,9 +24,11 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<BookingResponse> book(@Valid @RequestBody BookingRequest request) {
+    public ResponseEntity<BookingResponse> book(
+            @Valid @RequestBody BookingRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         BookingResult result = bookingService.book(
-                request.flightId(), request.seats(), request.passenger());
+                request.flightId(), request.seats(), request.passenger(), idempotencyKey);
         BookingResponse response = new BookingResponse(
                 result.booking().id(),
                 result.booking().flightId(),
