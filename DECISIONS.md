@@ -22,3 +22,10 @@
 - **Request validation** — Jakarta Bean Validation on the request DTO
   (`@NotBlank` flightId/passenger, `@NotNull @Positive` seats) via `@Valid`, so invalid
   input is rejected with `400 Bad Request` before any booking work.
+- **Failure statuses (one per cause)** — bad input → `400 Bad Request`; unknown flight →
+  `404 Not Found`; not enough seats → `409 Conflict` (the request conflicts with the
+  flight's current seat state). Three distinct causes, three distinct statuses.
+- **Consistent error body** — every error returns the same `ErrorResponse {code, message}`
+  via a single `@RestControllerAdvice`. Codes: `INVALID_REQUEST`, `FLIGHT_NOT_FOUND`,
+  `INSUFFICIENT_SEATS`. `FlightNotFoundException` / `InsufficientSeatsException` are thrown
+  from the atomic reserve and mapped centrally, so no failure returns bare/inconsistent text.

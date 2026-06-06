@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.flightbooking.exception.FlightNotFoundException;
+import com.example.flightbooking.exception.InsufficientSeatsException;
 import com.example.flightbooking.model.Booking;
 import com.example.flightbooking.service.BookingResult;
 import com.example.flightbooking.service.BookingService;
@@ -43,11 +45,39 @@ class BookingControllerTest {
     }
 
     @Test
-    void missingFlightIdReturns400() throws Exception {
+    void unknownFlightReturns404WithErrorBody() throws Exception {
+        when(bookingService.book(anyString(), anyInt(), anyString()))
+                .thenThrow(new FlightNotFoundException("ZZ999"));
+
+        mockMvc.perform(post("/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"flightId\":\"ZZ999\",\"seats\":3,\"passenger\":\"Jane Doe\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("FLIGHT_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
+    void notEnoughSeatsReturns409WithErrorBody() throws Exception {
+        when(bookingService.book(anyString(), anyInt(), anyString()))
+                .thenThrow(new InsufficientSeatsException("AI101", 200, 180));
+
+        mockMvc.perform(post("/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"flightId\":\"AI101\",\"seats\":200,\"passenger\":\"Jane Doe\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_SEATS"))
+                .andExpect(jsonPath("$.message").isNotEmpty());
+    }
+
+    @Test
+    void missingFlightIdReturns400WithErrorBody() throws Exception {
         mockMvc.perform(post("/bookings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"seats\":3,\"passenger\":\"Jane Doe\"}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
     @Test

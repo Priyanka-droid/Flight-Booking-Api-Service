@@ -1,5 +1,7 @@
 package com.example.flightbooking.repository;
 
+import com.example.flightbooking.exception.FlightNotFoundException;
+import com.example.flightbooking.exception.InsufficientSeatsException;
 import com.example.flightbooking.model.Flight;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,10 +27,10 @@ public class FlightRepository {
     public Flight reserveSeats(String flightId, int seats) {
         return flights.compute(flightId, (id, flight) -> {
             if (flight == null) {
-                throw new IllegalArgumentException("Unknown flight: " + flightId);
+                throw new FlightNotFoundException(flightId);
             }
             if (flight.remainingSeats() < seats) {
-                throw new IllegalStateException("Not enough seats on flight " + flightId);
+                throw new InsufficientSeatsException(flightId, seats, flight.remainingSeats());
             }
             return new Flight(id, flight.capacity(), flight.remainingSeats() - seats);
         });
