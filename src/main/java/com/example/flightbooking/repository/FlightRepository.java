@@ -18,4 +18,19 @@ public class FlightRepository {
     public Optional<Flight> findById(String id) {
         return Optional.ofNullable(flights.get(id));
     }
+
+    // Atomically decrements the flight's remaining seats by `seats` and returns the
+    // updated flight. The check-and-decrement runs as one operation per flight so
+    // concurrent bookings on the same flight cannot oversell.
+    public Flight reserveSeats(String flightId, int seats) {
+        return flights.compute(flightId, (id, flight) -> {
+            if (flight == null) {
+                throw new IllegalArgumentException("Unknown flight: " + flightId);
+            }
+            if (flight.remainingSeats() < seats) {
+                throw new IllegalStateException("Not enough seats on flight " + flightId);
+            }
+            return new Flight(id, flight.capacity(), flight.remainingSeats() - seats);
+        });
+    }
 }
