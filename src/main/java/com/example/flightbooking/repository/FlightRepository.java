@@ -14,7 +14,7 @@ public class FlightRepository {
     private final ConcurrentMap<String, Flight> flights = new ConcurrentHashMap<>();
 
     public void save(Flight flight) {
-        flights.put(flight.id(), flight);
+        flights.put(flight.getFlightNumber(), flight);
     }
 
     public Optional<Flight> findById(String id) {
@@ -29,10 +29,10 @@ public class FlightRepository {
             if (flight == null) {
                 throw new FlightNotFoundException(flightId);
             }
-            if (flight.remainingSeats() < seats) {
-                throw new InsufficientSeatsException(flightId, seats, flight.remainingSeats());
+            if (!flight.hasSeats(seats)) {
+                throw new InsufficientSeatsException(flightId, seats, flight.getRemainingSeats());
             }
-            return new Flight(id, flight.capacity(), flight.remainingSeats() - seats);
+            return flight.book(seats);
         });
     }
 }

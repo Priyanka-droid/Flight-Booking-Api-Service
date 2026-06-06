@@ -3,7 +3,6 @@ package com.example.flightbooking.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.example.flightbooking.bootstrap.FlightDataLoader;
 import com.example.flightbooking.exception.IdempotencyConflictException;
 import com.example.flightbooking.model.Flight;
 import com.example.flightbooking.repository.FlightRepository;
@@ -21,9 +20,9 @@ class BookingIdempotencyTest {
     private BookingService bookingService;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         repository = new FlightRepository();
-        new FlightDataLoader(repository).run();
+        repository.save(new Flight("AI101", 180));
         bookingService = new BookingService(repository, new IdempotencyStore());
     }
 
@@ -35,7 +34,7 @@ class BookingIdempotencyTest {
         assertThat(retry.booking().id()).isEqualTo(first.booking().id());
         assertThat(retry.remainingSeats()).isEqualTo(first.remainingSeats());
         assertThat(repository.findById("AI101")).get()
-                .extracting(Flight::remainingSeats)
+                .extracting(Flight::getRemainingSeats)
                 .isEqualTo(178);
     }
 
@@ -54,11 +53,12 @@ class BookingIdempotencyTest {
 
         assertThat(a.booking().id()).isNotEqualTo(b.booking().id());
         assertThat(repository.findById("AI101")).get()
-                .extracting(Flight::remainingSeats)
+                .extracting(Flight::getRemainingSeats)
                 .isEqualTo(178);
     }
 
-    // Two retries with the same token arriving together must collapse to one booking.
+    // Two retries with the same token arriving together must collapse to one
+    // booking.
     @Test
     void simultaneousRetriesWithSameTokenCreateOnlyOneBooking() throws InterruptedException {
         int threads = 50;
@@ -87,7 +87,7 @@ class BookingIdempotencyTest {
 
         assertThat(bookingIds).hasSize(1);
         assertThat(repository.findById("AI101")).get()
-                .extracting(Flight::remainingSeats)
+                .extracting(Flight::getRemainingSeats)
                 .isEqualTo(178);
     }
 }

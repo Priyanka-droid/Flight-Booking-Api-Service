@@ -1,14 +1,13 @@
-package com.example.flightbooking.web;
+package com.example.flightbooking.exception;
 
-import com.example.flightbooking.exception.FlightNotFoundException;
-import com.example.flightbooking.exception.IdempotencyConflictException;
-import com.example.flightbooking.exception.InsufficientSeatsException;
-import com.example.flightbooking.web.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.example.flightbooking.dto.ErrorResponse;
 
 // Maps booking failures to distinct HTTP statuses, all sharing the {code, message} body.
 @RestControllerAdvice
@@ -41,5 +40,19 @@ public class GlobalExceptionHandler {
                 .orElse("Invalid request");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("INVALID_REQUEST", message));
+    }
+
+    // Unparseable or malformed request body (bad JSON, wrong field types, empty body).
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_REQUEST", "Malformed or unreadable request body"));
+    }
+
+    // Anything unforeseen still returns the consistent {code, message} shape.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("INTERNAL_ERROR", "An unexpected error occurred"));
     }
 }

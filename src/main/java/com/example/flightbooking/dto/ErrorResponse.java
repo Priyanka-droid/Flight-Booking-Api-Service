@@ -1,4 +1,4 @@
-package com.example.flightbooking.web.dto;
+package com.example.flightbooking.dto;
 
 public record ErrorResponse(String code, String message) {
 }

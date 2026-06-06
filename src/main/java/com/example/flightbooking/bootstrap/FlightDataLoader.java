@@ -1,5 +1,6 @@
 package com.example.flightbooking.bootstrap;
 
+import com.example.flightbooking.config.FlightCatalogProperties;
 import com.example.flightbooking.model.Flight;
 import com.example.flightbooking.repository.FlightRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -11,15 +12,17 @@ import org.springframework.stereotype.Component;
 public class FlightDataLoader implements CommandLineRunner {
 
     private final FlightRepository flightRepository;
+    private final FlightCatalogProperties properties;
 
-    public FlightDataLoader(FlightRepository flightRepository) {
+    public FlightDataLoader(FlightRepository flightRepository, FlightCatalogProperties properties) {
         this.flightRepository = flightRepository;
+        this.properties = properties;
     }
 
     @Override
     public void run(String... args) {
-        flightRepository.save(new Flight("AI101", 180, 180));
-        flightRepository.save(new Flight("BA202", 200, 200));
-        flightRepository.save(new Flight("UA303", 150, 150));
+        properties.getCatalog().stream()
+                .map(e -> new Flight(e.getNumber(), e.getSeats()))
+                .forEach(flightRepository::save);
     }
 }

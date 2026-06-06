@@ -1,9 +1,10 @@
-package com.example.flightbooking.web;
+package com.example.flightbooking.controllers;
 
+import com.example.flightbooking.dto.BookingRequest;
+import com.example.flightbooking.dto.BookingResponse;
 import com.example.flightbooking.service.BookingResult;
 import com.example.flightbooking.service.BookingService;
-import com.example.flightbooking.web.dto.BookingRequest;
-import com.example.flightbooking.web.dto.BookingResponse;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

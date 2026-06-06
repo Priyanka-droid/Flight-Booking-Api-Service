@@ -2,7 +2,7 @@ package com.example.flightbooking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.example.flightbooking.bootstrap.FlightDataLoader;
+import com.example.flightbooking.model.Flight;
 import com.example.flightbooking.repository.FlightRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,9 +13,9 @@ class BookingServiceTest {
     private BookingService bookingService;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         repository = new FlightRepository();
-        new FlightDataLoader(repository).run();
+        repository.save(new Flight("AI101", 180));
         bookingService = new BookingService(repository, new IdempotencyStore());
     }
 
@@ -35,7 +35,7 @@ class BookingServiceTest {
         bookingService.book("AI101", 5, "Jane Doe");
 
         assertThat(repository.findById("AI101")).get()
-                .extracting(flight -> flight.remainingSeats())
+                .extracting(flight -> flight.getRemainingSeats())
                 .isEqualTo(175);
     }
 }

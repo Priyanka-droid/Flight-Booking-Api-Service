@@ -1,0 +1,10 @@
+flights:
+  catalog:
+    - number: AA100
+      seats: 150
+    - number: BA200
+      seats: 200
+    - number: CA300
+      seats: 80
+    - number: DL400
+      seats: 50

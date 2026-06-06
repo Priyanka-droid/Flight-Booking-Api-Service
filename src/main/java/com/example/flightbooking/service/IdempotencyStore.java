@@ -14,9 +14,11 @@ public class IdempotencyStore {
     private record Entry(String fingerprint, BookingResult result) {
     }
 
-    // Claims the token and runs `work` exactly once under it. Concurrent calls with the
+    // Claims the token and runs `work` exactly once under it. Concurrent calls with
+    // the
     // same token block until the first finishes, then replay its result instead of
-    // running `work` again. A token replayed with a different fingerprint is a conflict.
+    // running `work` again. A token replayed with a different fingerprint is a
+    // conflict.
     public BookingResult execute(String token, String fingerprint, Supplier<BookingResult> work) {
         Entry entry = entries.computeIfAbsent(token, t -> new Entry(fingerprint, work.get()));
         if (!entry.fingerprint().equals(fingerprint)) {

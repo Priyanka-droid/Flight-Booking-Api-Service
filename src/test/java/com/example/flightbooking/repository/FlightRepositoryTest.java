@@ -3,7 +3,6 @@ package com.example.flightbooking.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.example.flightbooking.bootstrap.FlightDataLoader;
 import com.example.flightbooking.exception.FlightNotFoundException;
 import com.example.flightbooking.exception.InsufficientSeatsException;
 import com.example.flightbooking.model.Flight;
@@ -16,9 +15,9 @@ class FlightRepositoryTest {
     private FlightRepository repository;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         repository = new FlightRepository();
-        new FlightDataLoader(repository).run();
+        repository.save(new Flight("AI101", 180));
     }
 
     @Test
@@ -26,8 +25,8 @@ class FlightRepositoryTest {
         Optional<Flight> flight = repository.findById("AI101");
 
         assertThat(flight).isPresent();
-        assertThat(flight.get().capacity()).isEqualTo(180);
-        assertThat(flight.get().remainingSeats()).isEqualTo(180);
+        assertThat(flight.get().getTotalSeats()).isEqualTo(180);
+        assertThat(flight.get().getRemainingSeats()).isEqualTo(180);
     }
 
     @Test
@@ -47,7 +46,7 @@ class FlightRepositoryTest {
                 .isInstanceOf(InsufficientSeatsException.class);
 
         assertThat(repository.findById("AI101")).get()
-                .extracting(Flight::remainingSeats)
+                .extracting(Flight::getRemainingSeats)
                 .isEqualTo(180);
     }
 }
